@@ -1,0 +1,8 @@
+A simple multicast send and receive program taken from chapter 2
+in the book Multicast Sockets.
+
+Multicast Sockets -- Practical Guide for Programmers
+Chapter 2: Multicasting with C Sockets
+By: 	David Makofske and Kevin Almeroth
+ISBN:	1-55860-846-X
+
