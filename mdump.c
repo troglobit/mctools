@@ -32,6 +32,7 @@
 #define MULTICAST
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -82,16 +83,13 @@ int argc;
 char *argv[];
 {
     int i, j;
-    int sock,
-	rd,
-	length,
-	origlen;
+    int sock, length, origlen;
     char buf[MAXPDU];
     struct sockaddr_in name;
     struct ip_mreq imr;
     char *interface = NULL;
     char debug=0;
-
+    fd_set fds;
     char tmpstr[100];
     int ttl;
     int port1, port2;
@@ -148,12 +146,14 @@ char *argv[];
     name.sin_addr.s_addr = INADDR_ANY;
 #endif
     name.sin_port = htons(groupport);
-    if (bind(sock, &name, sizeof(name))) {
+    if (bind(sock, (struct sockaddr *)&name, sizeof(name))) {
 	perror("bind");
 	exit(1);
     }
-    rd = (1 << sock);
-    while (select(sock+1, &rd, 0, 0, 0) > 0) {
+
+    FD_ZERO(&fds);
+    FD_SET(sock, &fds);
+    while (select(sock + 1, &fds, 0, 0, 0) > 0) {
 	j = 0;
 	if ((length = recv(sock, (char *) buf, sizeof(buf), 0)) < 0) {
 		perror("recv");
