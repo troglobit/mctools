@@ -24,10 +24,7 @@
  *
  * Revision 1.1  1994/09/27  13:39:45  jon
  * Initial revision
- *
- *
  */
-
 
 #define MULTICAST
 
@@ -41,48 +38,45 @@
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 
-#define DEFAULT_GROUP	0xe0027fff
-#define DEFAULT_PORT		9876
-#define MAXPDU 4096
-#define WIDTH 16
+#define DEFAULT_GROUP   0xe0027fff
+#define DEFAULT_PORT    9876
+#define MAXPDU          4096
+#define WIDTH           16
 
 u_long groupaddr = DEFAULT_GROUP;
 u_short groupport = DEFAULT_PORT;
 
-void dump(buf, buflen)
-char *buf;
-int buflen;
-{
-	int i,j;
-	unsigned char c;
-	char text[WIDTH];
-	printf("\nBuffer length: %d\n",buflen);
-	for (i=0; i<buflen/WIDTH; i++) {
-		for (j=0; j<WIDTH; j++ ) {
-			c=buf[i*WIDTH+j];
-			printf("%02x ",c);
-			text[j]=((c<32)||(c>126))?'.':c;
-		}
-		printf("\t%s\n",text);
-	}
-	
-	for (i=0; i<buflen%WIDTH; i++ ) {
-		c=buf[buflen-buflen%WIDTH+i];
-		printf("%02x ",c);
-		text[i]=((c<32)||(c>126))?'.':c;
-	}
-	for (i=buflen%WIDTH; i<WIDTH; i++ ) {
-		printf("   ");
-		text[i]=' ';
-	}
-	printf("\t%s\n",text);
-}
-
-int main(argc, argv)
-int argc;
-char *argv[];
+void dump(char *buf, int buflen)
 {
     int i, j;
+    unsigned char c;
+    char text[WIDTH];
+
+    printf("\nBuffer length: %d\n", buflen);
+    for (i = 0; i < buflen / WIDTH; i++) {
+	for (j = 0; j < WIDTH; j++) {
+	    c = buf[i * WIDTH + j];
+	    printf("%02x ",c);
+	    text[j] = (c < 32 || c > 126) ? '.' : c;
+	}
+	printf("\t%s\n", text);
+    }
+	
+    for (i = 0; i < buflen % WIDTH; i++) {
+	c = buf[buflen - buflen % WIDTH + i];
+	printf("%02x ",c);
+	text[i] = (c < 32 || c > 126) ? '.' : c;
+    }
+    for (i = buflen % WIDTH; i < WIDTH; i++) {
+	printf("   ");
+	text[i] = ' ';
+    }
+    printf("\t%s\n", text);
+}
+
+int main(int argc, char *argv[])
+{
+    int i, j, ret;
     int sock, length, origlen;
     char buf[MAXPDU];
     struct sockaddr_in name;
@@ -110,34 +104,35 @@ char *argv[];
     }
 
     if (argc == 4) {
-	interface=argv[3];
+	interface = argv[3];
     }    
 
-    if((sock=socket( AF_INET, SOCK_DGRAM, 0 )) < 0) {
-        perror("socket");
-        exit(1);
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if(sock < 0) {
+	perror("socket");
+	exit(1);
     }
 
     imr.imr_multiaddr.s_addr = groupaddr;
     imr.imr_multiaddr.s_addr = htonl(imr.imr_multiaddr.s_addr);
-    if (interface!=NULL) {
-        imr.imr_interface.s_addr = inet_addr(interface);
+    if (interface) {
+	imr.imr_interface.s_addr = inet_addr(interface);
     } else {
 	imr.imr_interface.s_addr = htonl(INADDR_ANY);
     }
     imr.imr_interface.s_addr = htonl(imr.imr_interface.s_addr);
 
-    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-	&imr, sizeof(struct ip_mreq)) < 0 ) {
+    ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &imr, sizeof(struct ip_mreq));
+    if (ret < 0) {
 	perror("setsockopt - IP_ADD_MEMBERSHIP");
 	exit(1);
     }
 
-	/*
-	 *	Use INADDR_ANY if your multicast port doesn't allow
-	 *	binding to a multicast address.
-	 *
-	 */
+    /*
+     *	Use INADDR_ANY if your multicast port doesn't allow
+     *	binding to a multicast address.
+     *
+     */
 
     name.sin_family = AF_INET;
 #ifndef CANT_MCAST_BIND
@@ -146,7 +141,8 @@ char *argv[];
     name.sin_addr.s_addr = INADDR_ANY;
 #endif
     name.sin_port = htons(groupport);
-    if (bind(sock, (struct sockaddr *)&name, sizeof(name))) {
+    ret = bind(sock, (struct sockaddr *)&name, sizeof(name));
+    if (ret) {
 	perror("bind");
 	exit(1);
     }
@@ -155,12 +151,23 @@ char *argv[];
     FD_SET(sock, &fds);
     while (select(sock + 1, &fds, 0, 0, 0) > 0) {
 	j = 0;
-	if ((length = recv(sock, (char *) buf, sizeof(buf), 0)) < 0) {
-		perror("recv");
-		exit(1);
+	length = recv(sock, (char *) buf, sizeof(buf), 0);
+	if (length < 0) {
+	    perror("recv");
+	    exit(1);
 	}
 	dump(buf,length);
     }    
     close(sock);
-    return(0);
+
+    return 0;
 }
+
+/**
+ * Local Variables:
+ *  version-control: t
+ *  indent-tabs-mode: t
+ *  c-file-style: "ellemtel"
+ *  c-basic-offset: 4
+ * End:
+ */
