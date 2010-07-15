@@ -28,15 +28,17 @@
 
 #define MULTICAST
 
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define DEFAULT_GROUP   0xe0027fff
 #define DEFAULT_PORT    9876
@@ -76,19 +78,13 @@ void dump(char *buf, int buflen)
 
 int main(int argc, char *argv[])
 {
-    int i, j, ret;
-    int sock, length, origlen;
+    int ret;
+    int sock, length;
     char buf[MAXPDU];
     struct sockaddr_in name;
     struct ip_mreq imr;
     char *interface = NULL;
-    char debug=0;
     fd_set fds;
-    char tmpstr[100];
-    int ttl;
-    int port1, port2;
-    u_long time1, time2;
-    struct in_addr source;
 
     if (argc > 4) {
 	printf("usage: %s [group [port [interface]]]\n", argv[0]);
@@ -150,7 +146,6 @@ int main(int argc, char *argv[])
     FD_ZERO(&fds);
     FD_SET(sock, &fds);
     while (select(sock + 1, &fds, 0, 0, 0) > 0) {
-	j = 0;
 	length = recv(sock, (char *) buf, sizeof(buf), 0);
 	if (length < 0) {
 	    perror("recv");
