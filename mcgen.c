@@ -1,6 +1,7 @@
 /* \\/ Westermo OnTime -- Multicast Generator v2
  *
  * Copyright (C) 2007, 2008 Westermo OnTime AS
+ * Copyright (C) 2010  Joachim Nilsson <troglobit@gmail.com>
  *
  * Generation 2 of mcgen is based on the multiblast tool, but is
  * heavily refactored.
@@ -374,7 +375,7 @@ int main (int argc, char *argv[])
 
          case 's':              /* --size */
             len = strtoul (optarg, NULL, 0);
-            DEBUG("Size: %u bytes payload\n", len);
+            DEBUG("Size: %zu bytes payload\n", len);
             /* Adjust for MAC+UDP header */
             len = len > 64 ? len - 42 : 22; /* At least 64 bytes */
             break;
@@ -410,7 +411,7 @@ int main (int argc, char *argv[])
       return (usage(argv[0]));
    }
 
-   DEBUG("Multicast starting address %s, num %d\n", argv[optind], len);
+   DEBUG("Multicast starting address %s, num %zu\n", argv[optind], len);
    start_address = inet_addr (argv[optind]);
    if (!IN_MULTICAST (htonl(start_address)))
    {
