@@ -1,15 +1,20 @@
-#include <stdio.h>
-#include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include <sys/types.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>
+
+#include <net/if.h>
+#include <netinet/in.h>
+
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
+#include <sys/types.h>
 
 /*
  * mcasta <=> mash <-> mash <=> mcastb
@@ -54,6 +59,7 @@ int   unicast = -1, multicast = -1;
 char* buf;
 unsigned char ttl = 1; /* default... */
 
+void check(int n);
 
 void get_options(argc,argv)
 int argc;
@@ -141,14 +147,12 @@ void set_defaults()
   bufsiz = BUFFER_SIZE;
 }
 
-main(argc, argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 {
   int r_fd;
   int t_fd;
   struct dh *us;
-  int nread, nwrite;
+  int nread = 0, nwrite;
 
 /* at least 4 addresses */
 /* bound r_fd, r_port receive (and send to) multicast */
@@ -240,7 +244,7 @@ char *argv[];
   else
 	our_m_address.sin_port = 0;
   our_m_address.sin_addr.s_addr = htonl(INADDR_ANY);
-  if (bind(r_fd, &our_m_address, sizeof(our_m_address)) < 0) { 
+  if (bind(r_fd, (struct sockaddr *)&our_m_address, sizeof(our_m_address)) < 0) { 
     perror("Couldn't bind the multicast socket");
     exit(1);
   }
@@ -257,7 +261,7 @@ char *argv[];
 	our_u_address.sin_port        = 0;
   our_u_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if ( bind(t_fd, &our_u_address, sizeof(our_u_address)) < 0) { 
+  if (bind(t_fd, (struct sockaddr *)&our_u_address, sizeof(our_u_address)) < 0) { 
     perror("Couldn't bind the unicast socket");
     exit(1);
   }
@@ -272,9 +276,10 @@ char *argv[];
    * in on t_fd (unicast) gets multicast on r_fd
    */
   do { 
-    int msg_len;
+    socklen_t msg_len;
     int sel;
     fd_set sofl;
+
     FD_ZERO  (&sofl);
     if (multicast)
 	    FD_SET(r_fd, &sofl);
@@ -293,8 +298,8 @@ char *argv[];
 	    check(nread);
 	    for(udest = 0, us = unicast_sites; udest <nunicast_sites; udest++, us++) {
 		    nwrite = sendto(t_fd, buf, nread, 0, 
-				&(us->their_u_address), 
-					sizeof(struct sockaddr_in));
+                                    (struct sockaddr *)&(us->their_u_address), 
+                                    sizeof(struct sockaddr_in));
 		    check(nwrite);
 	    }
 	}
@@ -305,7 +310,7 @@ fprintf(stderr, "u");
 	    nread = recvfrom(t_fd, buf, bufsiz, 0, NULL, &msg_len);
 	    check(nread);
 	    nwrite = sendto(r_fd, buf, nread, 0, 
-			&their_m_address, sizeof(their_m_address));
+                            (struct sockaddr *)&their_m_address, sizeof(their_m_address));
 	    check(nwrite);
 	}
     } else { /* assert (sel == 0) - but timeout infinite! */
@@ -330,8 +335,7 @@ char *name;
   fprintf(stderr, "Usage %s: [-r <receive_port>] [-t <transmit_port>] [-b <bufer_size>] [-T ttl] [-U] [-M] {\"other_host port\"}+ <\"group_name\">\n", name);
 }
 
-check(n)
-int n;
+void check(int n)
 {
 	if (n < 0) {
 		perror("io");

@@ -6,7 +6,7 @@
 # VERSION       ?= $(shell git tag -l | tail -1)
 VERSION      ?= 1.0.0-rc1
 NAME          = mcast-tools
-EXECS         = mcgen bcgen mdump mcjoin stdload
+EXECS         = mcgen bcgen mdump mcjoin stdload monstermash
 PKG           = $(NAME)-$(VERSION)
 ARCHIVE       = $(PKG).tar.bz2
 
@@ -25,6 +25,7 @@ CFLAGS        = $(USERCOMPILE)
 CFLAGS       += -O2 -W -Wall -Werror
 #CFLAGS       += -O -g
 LDLIBS        = 
+OBJS          = $(addsuffix .o,$(EXECS))
 SRCS          = $(addsuffix .c,$(EXECS))
 MANS          = $(addsuffix .8,$(EXECS))
 DISTFILES     = README AUTHORS LICENSE
@@ -40,6 +41,7 @@ mdump: mdump.o
 mcjoin: mcjoin.o
 
 stdload: stdload.o
+monstermash: monstermash.o
 
 install: $(EXECS)
 	$(Q)[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
