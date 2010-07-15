@@ -1,22 +1,27 @@
-/*
- * stdload - a mulitcast traffic generator designed to mimic an IETF broadcast.
+/* stdload - a mulitcast traffic generator designed to mimic an IETF broadcast.
  * 
- * (c) Pittsburgh Supercomputing Center, Matthew B Mathis, 1993.
+ * Copyright (c) 1993  Pittsburgh Supercomputing Center, Matthew B Mathis.
+ * Copyright (c) 2010  Joachim Nilsson <troglobit at gmail.com>
+ *
  * All rights reserved.   See COPYRIGHT.h for additional information.
  *
  * This program is very dangerous!
-
-
-The command I am using to generate the IETF load is 
-
-%  stdload -s 7 -c
-
---Jamshid
+ *
+ * The command I am using to generate the IETF load is 
+ * %  stdload -s 7 -c
+ *                                 --Jamshid
  */
 #include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
 #include <time.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>
 
 #include <sys/types.h>
 #include <sys/param.h>
@@ -74,21 +79,21 @@ struct session {
   int ratediv;
   int port;
 } s[] = {
-  {255, 320, 1, 4, "GSM Audio 1"},
-  {223, 320, 1, 4, "GSM Audio 2"},
-  {191, 160, 1, 1, "PCM Audio 1"},
-  {159, 160, 1, 1, "PCM Audio 2"},
-  {191,  50, 1, 1, "Assorted control and listener messages"},
-  {127, 512, 1, 2, "Video 1"},
-  { 95, 512, 1, 2, "Video 2"},
-  { 63,MPAY, 1, 1, "Test Application1"},
-  { 63,MPAY, 1, 1, "Test Application2"}
+  {.ttl = 255, .payload =  320, .raten = 1, .rated = 4, .name = "GSM Audio 1"},
+  {.ttl = 223, .payload =  320, .raten = 1, .rated = 4, .name = "GSM Audio 2"},
+  {.ttl = 191, .payload =  160, .raten = 1, .rated = 1, .name = "PCM Audio 1"},
+  {.ttl = 159, .payload =  160, .raten = 1, .rated = 1, .name = "PCM Audio 2"},
+  {.ttl = 191, .payload =   50, .raten = 1, .rated = 1, .name = "Assorted control and listener messages"},
+  {.ttl = 127, .payload =  512, .raten = 1, .rated = 2, .name = "Video 1"},
+  {.ttl =  95, .payload =  512, .raten = 1, .rated = 2, .name = "Video 2"},
+  {.ttl =  63, .payload = MPAY, .raten = 1, .rated = 1, .name = "Test Application1"},
+  {.ttl =  63, .payload = MPAY, .raten = 1, .rated = 1, .name = "Test Application2"}
 };
 #define NSES (sizeof(s)/sizeof(struct session))
 #define DNS 4
-int ns=DNS;
+size_t ns = DNS;
 
-void ring();
+void ring(int signo);
 int ttlclamp=255, margin=0, chop=0;
 struct sockaddr_in grsin;
 struct itimerval timebase;
@@ -102,14 +107,14 @@ struct {
   char data[MPAY];
 } outbuf;
 
-main(argc, argv)
-char *argv[];
+int main(int argc, char *argv[])
 {
   char *sv, **av = argv, *name = DEFG;
   struct hostent *hp;
-  int i, port = DEFP;
+  int port = DEFP;
   int r, sz, Tr, Tbw;
   int sockbuf=32767;
+  size_t i;
 
   argc--, av++;
   while (argc > 0 && *av[0] == '-') {
@@ -130,8 +135,8 @@ char *argv[];
 	r = 5000*s[i].raten/s[i].rated;		/* pay attention to roundoff */
 	sz = 20+8+sizeof(struct rtp_head)+s[i].payload;
 	Tr += r; Tbw += r*sz;
-	printf("%d)  %3d  %3d  %4d %4d   %4d   %4d %s\n",
-	       i+1, s[i].ttl, r/100, sz, r*sz*8/100000, Tr/100, Tbw*8/100000,
+	printf("%zu)  %3d  %3d  %4d %4d   %4d   %4d %s\n",
+	       i + 1, s[i].ttl, r/100, sz, r*sz*8/100000, Tr/100, Tbw*8/100000,
 	       s[i].name);
       }
       printf("(Defaults to 1 through %d)\n", DNS);
@@ -143,7 +148,6 @@ char *argv[];
         argc--;
         break;
       }
-punt:
       printf(usage, DEFG);
       printf("Invalid argument to -%c\n", *sv);
       exit(1);
@@ -162,8 +166,8 @@ punt:
   if (*av) name = *av; 
   if (isdigit(*name)) {
     grsin.sin_addr.s_addr = inet_addr(name);
-  } else if (hp = gethostbyname(name)) {
-    bcopy(hp->h_addr, (char *)&grsin.sin_addr, hp->h_length);
+  } else if ((hp = gethostbyname(name))) {
+    memcpy(hp->h_addr, &grsin.sin_addr, hp->h_length);
   } else {
     printf("I Don't understand name %s\n",name);
     exit(1);
@@ -179,7 +183,12 @@ punt:
   gettimeofday(&now, 0);
   tick = now.tv_sec-1;
   silent = chop;
-  NOERROR(signal(SIGALRM, ring), "signal");
+  if (SIG_ERR == signal(SIGALRM, ring))
+  {
+    perror("signal");
+    exit(1);
+  }
+
   bzero(&timebase, sizeof(timebase));
   timebase.it_value.tv_usec = timebase.it_interval.tv_usec =
     TIMEBASE-(TIMEBASE*margin/20);
@@ -188,12 +197,16 @@ punt:
   for (;;) pause();
 }
 
-void ring()
+void ring(int signo __attribute__ ((unused)))
 {
   int tsnow;
-  int i;
+  size_t i;
 
-  NOERROR(signal(SIGALRM, ring), "signal");
+  if (SIG_ERR == signal(SIGALRM, ring))
+  {
+    perror("signal");
+    exit(1);
+  }
   gettimeofday(&now, 0);
   if (tick != now.tv_sec) {
     if (silent) {
@@ -209,7 +222,7 @@ void ring()
   if (silent) return;
   tsnow = TV2TS(&now);
 
-  for (i=0; i<ns; i++) {
+  for (i = 0; i < ns; i++) {
     unsigned char ttl;
     s[i].ratediv += s[i].raten;
     while (s[i].ratediv >= s[i].rated) {
@@ -222,7 +235,7 @@ void ring()
       NOERROR(setsockopt(os, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, 1), "ttl");
       grsin.sin_port = s[i].port;
       if (sendto(os, (char *)&outbuf, sizeof(struct rtp_head)+s[i].payload, 0,
-		 &grsin, sizeof(grsin)) > 0) {
+                 (struct sockaddr *)&grsin, sizeof(grsin)) > 0) {
 	pkts++;
 	bytes += 20 + 8 + sizeof(struct rtp_head)+s[i].payload;
       } else
