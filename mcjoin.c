@@ -20,6 +20,8 @@
 
 #define DEBUG(fmt, ...) {if (verbose) { printf (fmt, ## __VA_ARGS__);}}
 
+#define DEFAULT_GROUP 0x0e010203
+
 /* Program meta data */
 const char *doc = "Multicast Join Group Test Program";
 const char *program_version = "$Date: 2007-01-30 23:33:08 +0100 (Tue, 30 Jan 2007) $ $Rev: 4070 $";
@@ -114,9 +116,8 @@ static int join_group (char *iface, char *group)
 
 int main (int argc, char *argv[])
 {
-   unsigned long int total = 0;
-   int i, c, start_group;
-   char iface[40], start[16], *group;
+   int i, c, start_group = DEFAULT_GROUP, total = 0;
+   char iface[40], start[16], *group, *ptr;
    struct in_addr start_in_addr;
    struct option long_options[] = {
       /* {"verbose", 0, 0, 'V'}, */
@@ -152,8 +153,13 @@ int main (int argc, char *argv[])
             break;
 
          case 'n':              /* number-of-groups */
-            total = strtoul (optarg, NULL, 0);
-            DEBUG("GROUPS: %lu\n", total);
+            total = strtoul (optarg, &ptr, 0);
+            if (ptr == optarg)
+            {
+               perror ("Failed conversion of number of mc groups");
+               exit (1);
+            }
+            DEBUG("GROUPS: %d\n", total);
             break;
 
          case 'i':
