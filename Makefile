@@ -29,7 +29,11 @@ SRCS          = $(addsuffix .c,$(EXECS))
 MANS          = $(addsuffix .8,$(EXECS))
 DISTFILES     = README AUTHORS LICENSE
 
-all: $(EXECS) ${MSTAT}
+all: $(EXECS)
+
+mcgen: mcgen.o
+
+mdump: mdump.o
 
 install: $(EXECS)
 	$(Q)[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
