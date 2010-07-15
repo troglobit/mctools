@@ -6,7 +6,7 @@
 # VERSION       ?= $(shell git tag -l | tail -1)
 VERSION      ?= 1.0.0-rc1
 NAME          = mcast-tools
-EXECS         = mcgen bcgen mdump mcjoin stdload monstermash
+EXECS         = mcgen bcgen mdump mcjoin stdload monstermash mping2/mping
 PKG           = $(NAME)-$(VERSION)
 ARCHIVE       = $(PKG).tar.bz2
 
@@ -27,6 +27,7 @@ CFLAGS       += -O2 -W -Wall -Werror
 LDLIBS        = 
 OBJS          = $(addsuffix .o,$(EXECS))
 SRCS          = $(addsuffix .c,$(EXECS))
+MAPS          = $(addsuffix .map,$(EXECS))
 MANS          = $(addsuffix .8,$(EXECS))
 DISTFILES     = README AUTHORS LICENSE
 
@@ -42,6 +43,7 @@ mcjoin: mcjoin.o
 
 stdload: stdload.o
 monstermash: monstermash.o
+mping2/mping: mping2/mping.o
 
 install: $(EXECS)
 	$(Q)[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
@@ -71,10 +73,10 @@ uninstall:
 	done
 
 clean: ${SNMPCLEAN}
-	-$(Q)$(RM) $(OBJS) $(EXECS)
+	-$(Q)$(RM) $(OBJS) $(EXECS) $(MAPS)
 
 distclean:
-	-$(Q)$(RM) $(OBJS) core $(EXECS) vers.c cfparse.c tags TAGS *.o *.map .*.d *.out tags TAGS
+	-$(Q)$(RM) $(OBJS) core $(EXECS) $(MAPS) vers.c cfparse.c tags TAGS *.o .*.d *.out tags TAGS
 
 dist:
 	@echo "Building bzip2 tarball of $(PKG) in parent dir..."

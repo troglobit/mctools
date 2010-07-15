@@ -59,7 +59,7 @@ void sender_listen_loop ();
 void receiver_listen_loop ();
 void subtract_timeval (struct timeval *val, const struct timeval *sub);
 double timeval_to_ms (const struct timeval *val);
-int process_mping_packet (char *packet, int recv_len, unsigned char type);
+int process_mping_packet (char *packet, size_t recv_len, unsigned char type);
 void clean_exit ();
 void output_results ();
 void received_packet_count ();

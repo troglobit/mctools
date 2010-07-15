@@ -315,7 +315,7 @@ int main (int argc, char **argv)
 }
 
 
-void send_mping (int signum)
+void send_mping (int signo __attribute__ ((unused)))
 {
    static int current_ping = 0;
    struct timeval now;
@@ -374,13 +374,12 @@ void send_packet (struct mping_struct *packet)
 void sender_listen_loop ()
 {
    char recv_packet[MAX_BUF_LEN + 1];   /* buffer to receive packet */
-   int recv_len;                /* length of packet received */
-   double rtt;                  /* round trip time */
-   double actual_rtt;           /* rtt - send interval delay */
+   ssize_t recv_len;                    /* length of packet received */
+   double rtt;                          /* round trip time */
+   double actual_rtt;                   /* rtt - send interval delay */
 
    while (1)
    {
-
       /* clear the receive buffer */
       memset (recv_packet, 0, sizeof (recv_packet));
 
@@ -424,7 +423,7 @@ void sender_listen_loop ()
             rtt_min = actual_rtt;
 
          /* output received packet information */
-         printf ("%d bytes from %s: seqno=%d ttl=%d ",
+         printf ("%zu bytes from %s: seqno=%d ttl=%d ",
                  recv_len, inet_ntoa (rcvd_pkt->src_host),
                  rcvd_pkt->seq_no, rcvd_pkt->ttl);
          printf ("etime=%.1f ms atime=%.3f ms\n", rtt, actual_rtt);
@@ -584,14 +583,13 @@ double timeval_to_ms (const struct timeval *val)
    return (val->tv_sec * 1000.0 + val->tv_usec / 1000.0);
 }
 
-int process_mping_packet (char *packet, int recv_len, unsigned char type)
+int process_mping_packet (char *packet, size_t recv_len, unsigned char type)
 {
-
    /* validate packet size */
    if (recv_len < sizeof (struct mping_struct))
    {
       if (verbose)
-         printf ("Discarding packet: too small (%d bytes)\n", strlen (packet));
+         printf ("Discarding packet: too small (%zu bytes)\n", strlen (packet));
       return (-1);
    }
 
