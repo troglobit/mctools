@@ -1,7 +1,7 @@
 /* \\/ Westermo OnTime -- Multicast Generator v2
  *
  * Copyright (C) 2007, 2008  Westermo OnTime AS
- * Copyright (C) 2010  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (C) 2010  Joachim Nilsson <troglobit at gmail.com>
  *
  * Generation 2 of mcgen is based on the multiblast tool, but is
  * heavily refactored.
