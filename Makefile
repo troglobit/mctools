@@ -6,7 +6,7 @@
 # VERSION       ?= $(shell git tag -l | tail -1)
 VERSION      ?= 1.0.0-rc1
 NAME          = mcast-tools
-EXECS         = mcgen mdump 
+EXECS         = mcgen bcgen mdump mcjoin
 PKG           = $(NAME)-$(VERSION)
 ARCHIVE       = $(PKG).tar.bz2
 
@@ -33,7 +33,11 @@ all: $(EXECS)
 
 mcgen: mcgen.o
 
+bcgen: bcgen.o
+
 mdump: mdump.o
+
+mcjoin: mcjoin.o
 
 install: $(EXECS)
 	$(Q)[ -n "$(DESTDIR)" -a ! -d $(DESTDIR) ] || install -d $(DESTDIR)
