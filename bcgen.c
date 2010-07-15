@@ -1,6 +1,7 @@
 /* \\/ Westermo OnTime AS - Broadcast generator 
  * 
- * Copyright (C) 2001-2008 Westermo OnTime AS
+ * Copyright (C) 2001-2008  Westermo OnTime AS
+ * Copyright (C) 2010  Joachim Nilsson <troglobit@gmail.com>
  *
  * Author(s): Øyvind Holmeide <oeyvind.holmeide@westermo.se>
  *            Joachim Nilsson <joachim.nilsson@westermo.se>
@@ -277,7 +278,7 @@ int main (int argc, char *argv[])
 
          case 'c':              /* --count */
             count = strtoul (optarg, NULL, 0);
-            DEBUG("Count: %u\n", count);
+            DEBUG("Count: %zu\n", count);
             break;
 
          case 'Q':              /* --tos */
@@ -292,7 +293,7 @@ int main (int argc, char *argv[])
 
          case 's':              /* --size */
             len = strtoul (optarg, NULL, 0);
-            DEBUG("Size: %u bytes payload\n", len);
+            DEBUG("Size: %zu bytes payload\n", len);
             /* Adjust for MAC+UDP header */
             len = len > 64 ? len - 42 : 22; /* At least 64 bytes */
             break;
@@ -323,7 +324,7 @@ int main (int argc, char *argv[])
       return usage();
    }
 
-   DEBUG("Broadcast address %s, size %d\n", argv[optind], len);
+   DEBUG("Broadcast address %s, size %zu\n", argv[optind], len);
    
    sd = udp_socket_init (iface, UDP_PORT, argv[optind], &sin, qos);
    if (sd < 0)
