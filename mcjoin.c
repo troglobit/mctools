@@ -1,6 +1,7 @@
 /* Join a multicast group (for testing)
  *
  * Copyright (C) 2004, David Stevens <dlstevens at us.ibm.com>
+ * Copyright (C) 2010  Joachim Nilsson <troglobit at gmail.com>
  *
  * Build on any Linux/BSD with "make mcjoin"
  */
@@ -25,7 +26,7 @@
 /* Program meta data */
 const char *doc = "Multicast Join Group Test Program";
 const char *program_version = "$Date: 2007-01-30 23:33:08 +0100 (Tue, 30 Jan 2007) $ $Rev: 4070 $";
-const char *program_bug_address = "David Stevens <dlstevens at us.ibm.com>";
+const char *program_bug_address = "Joachim Nilsson <troglobit at gmail.com>";
 
 /* Mode flags */
 int quiet = 0;
